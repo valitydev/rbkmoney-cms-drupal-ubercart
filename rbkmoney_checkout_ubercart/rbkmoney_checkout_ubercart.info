@@ -1,0 +1,8 @@
+name = RBKmoney
+description = Provide RBKmoney payment gateway
+package = "Ubercart - payment"
+core = 7.x
+php = 5.x
+configure = admin/store/settings/rbkmoney_checkout_ubercart
+dependencies[] = uc_payment
+project = rbkmoney

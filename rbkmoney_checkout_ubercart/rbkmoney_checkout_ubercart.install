@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Uninstall function for the rbkmoney_checkout_ubercart module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function rbkmoney_checkout_ubercart_uninstall() {
+  variable_del('uc_rbkmoney_shop_id');
+  variable_del('uc_rbkmoney_merchant_private_key');
+  variable_del('uc_rbkmoney_merchant_callback_public_key');
+  variable_del('uc_rbkmoney_payform_path_logo');
+  variable_del('uc_rbkmoney_payform_button_label');
+  variable_del('uc_rbkmoney_payform_company_name');
+  variable_del('uc_rbkmoney_payform_description');
+  variable_del('uc_rbkmoney_log');
+}
