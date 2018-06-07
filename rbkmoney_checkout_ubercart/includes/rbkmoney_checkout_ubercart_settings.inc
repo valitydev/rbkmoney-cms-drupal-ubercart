@@ -17,7 +17,7 @@ define('MODULE_BASE_PATH', base_path() . drupal_get_path('module', MODULE_NAME))
 /**
  * Api URL
  */
-define('API_URL', 'https://api.rbk.money/v1/');
+define('API_URL', 'https://api.rbk.money/v2/');
 
 /**
  * Merchant settings
@@ -31,7 +31,6 @@ define('MERCHANT_CALLBACK_PUBLIC_KEY', trim(variable_get('uc_rbkmoney_merchant_c
 define('BASE_URL', $GLOBALS['base_url']);
 define('PAYMENT_FORM_URL', 'https://checkout.rbk.money/checkout.js');
 define('PAYMENT_FORM_SUCCESS_URL', BASE_URL . '/'.MODULE_NAME.'/success');
-define('PAYMENT_FORM_PATH_IMG_LOGO', BASE_URL . MODULE_BASE_PATH . '/images/logo_default.png');
 
 /**
  * Payment method logo
@@ -75,9 +74,7 @@ define('CREATE_INVOICE_DUE_DATE', '+1 days');
  */
 
 define('SIGNATURE', 'HTTP_CONTENT_SIGNATURE');
-define('SIGNATURE_ALG', 'alg');
-define('SIGNATURE_DIGEST', 'digest');
-define('SIGNATURE_PATTERN', "|alg=(\S+);\sdigest=(.*)|i");
+define('SIGNATURE_PATTERN', "/alg=(\S+);\sdigest=/");
 
 
 define('EVENT_TYPE', 'eventType');
@@ -118,6 +115,7 @@ define('PAYMENT_STATUS', 'status');
  * Api params
  */
 define('API_INVOICE_ID', 'invoice_id');
+define('API_INVOICE_ACCESS_TOKEN', 'invoice_access_token');
 
 /**
  * Openssl verify

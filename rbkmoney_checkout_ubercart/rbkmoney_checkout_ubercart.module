@@ -20,6 +20,7 @@ function rbkmoney_checkout_ubercart_permission()
     ];
 }
 
+
 /**
  * Implements hook_menu().
  */
@@ -44,13 +45,13 @@ function rbkmoney_checkout_ubercart_menu()
 
     $items['rbkmoney_checkout_ubercart/callback/result'] = [
         'title' => 'Callback',
-        'page callback' => 'rbkmoney_checkout_ubercart/callback/result',
+        'page callback' => 'rbkmoney_checkout_ubercart_callback_result',
         'access arguments' => ['access content'],
         'type' => MENU_CALLBACK,
         'file' => 'includes/rbkmoney_checkout_ubercart_callback.pages.inc',
     ];
 
-    return $items;
+  return $items;
 }
 
 /**
@@ -76,18 +77,18 @@ function rbkmoney_checkout_ubercart_setup()
 
     $form['tab1']['uc_rbkmoney_shop_id'] = [
         '#type' => 'textfield',
-        '#title' => t('ID магазина'),
-        '#default_value' => variable_get('uc_rbkmoney_shop_id', '1'),
-        '#description' => t(''),
+        '#title' => t('Shop ID'),
+        '#default_value' => variable_get('uc_rbkmoney_shop_id', 'TEST'),
+        '#description' => t('Идентификатор магазина из RBKmoney. Скопируйте его в Личном кабинете RBKmoney в разделе Детали магазина, поле Идентификатор'),
         '#required' => TRUE,
     ];
 
     $form['tab1']['uc_rbkmoney_merchant_callback_public_key'] = [
         '#type' => 'textarea',
-        '#title' => t('Ключ подписи получаемых на Webhook уведомлений из <a href=\'!dblog\'>https://dashboard.rbk.money/api/webhooks</a>',
-            ['!dblog' => "https://dashboard.rbk.money/api/webhooks"]),
+        '#title' => t('Приватный ключ из <a href=\'!dblog\'>https://dashboard.rbk.money</a>',
+            ['!dblog' => "https://dashboard.rbk.money"]),
         '#default_value' => MERCHANT_CALLBACK_PUBLIC_KEY,
-        '#description' => t(''),
+        '#description' => t('Ключ для обработки уведомлений о смене статуса'),
         '#rows' => 10,
         '#cols' => 10,
         '#resizable' => FALSE,
@@ -97,10 +98,10 @@ function rbkmoney_checkout_ubercart_setup()
 
     $form['tab1']['uc_rbkmoney_merchant_private_key'] = [
         '#type' => 'textarea',
-        '#title' => t('Ваш ключ для доступа к API из <a href=\'!dblog\'>https://dashboard.rbk.money/api/key</a>',
-            ['!dblog' => "https://dashboard.rbk.money/api/key"]),
+        '#title' => t('Публичный ключ из <a href=\'!dblog\'>https://dashboard.rbk.money</a>',
+            ['!dblog' => "https://dashboard.rbk.money"]),
         '#default_value' => MERCHANT_PRIVATE_KEY,
-        '#description' => t(''),
+        '#description' => t('Ключ для доступа к API. Скопируйте его в Личном кабинете RBKmoney в разделе API Ключ'),
         '#rows' => 10,
         '#cols' => 10,
         '#resizable' => FALSE,
@@ -114,14 +115,6 @@ function rbkmoney_checkout_ubercart_setup()
         '#collapsible' => TRUE,
         '#group' => 'vertical_tabs',
     );
-
-    $form['tab2']['uc_rbkmoney_payform_path_logo'] = [
-        '#type' => 'textfield',
-        '#title' => t('URL логотипа для отображения на форме оплаты'),
-        '#default_value' => variable_get('uc_rbkmoney_payform_path_logo', PAYMENT_FORM_PATH_IMG_LOGO),
-        '#description' => t(''),
-        '#required' => FALSE,
-    ];
 
     $form['tab2']['uc_rbkmoney_payform_button_label'] = [
         '#type' => 'textfield',
@@ -183,7 +176,7 @@ function rbkmoney_checkout_ubercart_setup()
 
     $form['tab4']['docs_integrations'] = array(
         '#type' => 'item',
-        '#markup' => t(l('Документация по интеграции', 'https://rbkmoney.github.io/docs',
+        '#markup' => t(l('Документация по интеграции', 'https://developer.rbk.money',
             ['attributes' =>
                 ['target' => '_blank']
             ])),
@@ -191,7 +184,7 @@ function rbkmoney_checkout_ubercart_setup()
 
     $form['tab4']['docs_webhooks'] = array(
         '#type' => 'item',
-        '#markup' => t(l('Документация для работы с вебхуками', 'https://rbkmoney.github.io/webhooks-events-api/',
+        '#markup' => t(l('Документация для работы с вебхуками', 'https://webhooks.developer.rbk.money',
             ['attributes' =>
                 ['target' => '_blank']
             ])),
@@ -199,7 +192,7 @@ function rbkmoney_checkout_ubercart_setup()
 
     $form['tab4']['docs_checkout'] = array(
         '#type' => 'item',
-        '#markup' => t(l('Документация по кастомизации платежной формы', 'https://rbkmoney.github.io/docs/integrations/checkout/#html-api',
+        '#markup' => t(l('Документация по кастомизации платежной формы', 'https://developer.rbk.money/integrations/checkout/#html-api',
             ['attributes' =>
                 ['target' => '_blank']
             ])),
@@ -257,37 +250,42 @@ function rbkmoney_checkout_ubercart_form_alter(&$form, &$form_state, $form_id)
         if ($order->payment_method == 'rbkmoney') {
             unset($form['actions']['submit']);
 
-            if (empty($_SESSION[API_INVOICE_ID])) {
+            if (empty($_SESSION[API_INVOICE_ID]) || empty($_SESSION[API_INVOICE_ACCESS_TOKEN])) {
                 $response = _rbkmoney_checkout_ubercart_create_invoice($order);
-                $response_decode = drupal_json_decode($response['body']);
 
-                $invoice_id = !empty($response_decode['id']) ? $response_decode['id'] : '';
+                $invoice_id = $response["invoice"]["id"];
+                $access_token = $response["invoiceAccessToken"]["payload"];
 
                 $_SESSION[API_INVOICE_ID] = $invoice_id;
+                $_SESSION[API_INVOICE_ACCESS_TOKEN] = $access_token;
             } else {
                 $invoice_id = $_SESSION[API_INVOICE_ID];
+                $access_token = $_SESSION[API_INVOICE_ACCESS_TOKEN];
             }
 
-            $access_token = _rbkmoney_checkout_ubercart_create_invoice_access_token($invoice_id);
+            $form_company_name = variable_get('uc_rbkmoney_payform_company_name');
+            $company_name = !empty($form_company_name) ? 'data-name="' . $form_company_name . '"' : '';
 
-            $company_name = (!empty(variable_get('uc_rbkmoney_payform_company_name'))) ? 'data-name="' . variable_get('uc_rbkmoney_payform_company_name') . '"' : '';
-            $company_logo = (!empty(variable_get('uc_rbkmoney_payform_path_logo'))) ? 'data-logo="' . variable_get('uc_rbkmoney_payform_path_logo') . '"' : '';
-            $button_label = (!empty(variable_get('uc_rbkmoney_payform_button_label'))) ? 'data-label="' . variable_get('uc_rbkmoney_payform_button_label') . '"' : '';
-            $description = (!empty(variable_get('uc_rbkmoney_payform_description'))) ? 'data-description="' . variable_get('uc_rbkmoney_payform_description') . '"' : '';
+            $form_button_label = variable_get('uc_rbkmoney_payform_button_label');
+            $button_label = !empty($form_button_label) ? 'data-label="' . $form_button_label . '"' : '';
+
+            $form_description = variable_get('uc_rbkmoney_payform_description');
+            $description = !empty($form_description) ? 'data-description="' . $form_description . '"' : '';
+
 
             $payframe = '<form action="' . PAYMENT_FORM_SUCCESS_URL . '" method="' . HTTP_METHOD_GET . '">
               <script src="' . PAYMENT_FORM_URL . '" class="rbkmoney-checkout"
                       data-invoice-id="' . $invoice_id . '"
                       data-invoice-access-token="' . $access_token . '"
                       ' . $company_name . '
-                      ' . $company_logo . '
                       ' . $button_label . '
                       ' . $description . '
                       >
               </script>
             </form>';
 
-            $css_button = '<style>' . strip_tags(variable_get('uc_rbkmoney_payform_css_button', PAYMENT_FORM_DEFAULT_CSS_BUTTON)) . '</style>';
+            $payform_css_button = variable_get('uc_rbkmoney_payform_css_button', PAYMENT_FORM_DEFAULT_CSS_BUTTON);
+            $css_button = '<style>' . strip_tags($payform_css_button) . '</style>';
 
             $form['#prefix'] = '<table><tr><td>';
             $form['#suffix'] = '</td><td>' . $css_button . $payframe . '</td></tr></table>';
@@ -398,6 +396,7 @@ function rbkmoney_checkout_ubercart_payment_end($arg)
             if (isset($_SESSION['cart_order'])) {
                 $_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete'] = TRUE;
                 if (!empty($_SESSION[API_INVOICE_ID])) unset($_SESSION[API_INVOICE_ID]);
+                if (!empty($_SESSION[API_INVOICE_ACCESS_TOKEN])) unset($_SESSION[API_INVOICE_ACCESS_TOKEN]);
                 drupal_goto('cart/checkout/complete');
             }
             break;
@@ -406,7 +405,8 @@ function rbkmoney_checkout_ubercart_payment_end($arg)
             if (isset($_SESSION['cart_order'])) {
                 unset($_SESSION['cart_order']);
                 if (!empty($_SESSION[API_INVOICE_ID])) unset($_SESSION[API_INVOICE_ID]);
-                drupal_set_message(t('Your payment has been declined.'), 'error');
+                if (!empty($_SESSION[API_INVOICE_ACCESS_TOKEN])) unset($_SESSION[API_INVOICE_ACCESS_TOKEN]);
+                drupal_set_message(t('Ваш платеж отклонен.'), 'error');
                 drupal_goto('cart');
             }
             break;
@@ -415,27 +415,11 @@ function rbkmoney_checkout_ubercart_payment_end($arg)
     return;
 }
 
-function _rbkmoney_checkout_ubercart_create_invoice_access_token($invoice_id)
-{
-    $url = _rbkmoney_checkout_ubercart_prepare_api_url('processing/invoices/' . $invoice_id . '/access_tokens');
-    $headers = _rbkmoney_checkout_ubercart_prepare_headers();
-    $response = _rbkmoney_checkout_ubercart_send($url, $headers, '', 'access_tokens');
-
-    if ($response['http_code'] != HTTP_CODE_CREATED) {
-        drupal_set_message(t('An error occurred while creating Invoice Access Token'), 'error');
-        drupal_goto('cart');
-    }
-
-    $response_decode = drupal_json_decode($response['body']);
-    $access_token = !empty($response_decode['payload']) ? $response_decode['payload'] : '';
-
-    return $access_token;
-}
-
 function _rbkmoney_checkout_ubercart_create_invoice($order)
 {
+    $shopId = variable_get('uc_rbkmoney_shop_id');
     $data = [
-        'shopID' => (int)variable_get('uc_rbkmoney_shop_id'),
+        'shopID' => $shopId,
         'amount' => _rbkmoney_checkout_ubercart_prepare_amount($order->order_total),
         'metadata' => _rbkmoney_checkout_ubercart_prepare_metadata($order),
         'dueDate' => _rbkmoney_checkout_ubercart_prepare_due_date(),
@@ -448,16 +432,16 @@ function _rbkmoney_checkout_ubercart_create_invoice($order)
     $headers = _rbkmoney_checkout_ubercart_prepare_headers();
     $response = _rbkmoney_checkout_ubercart_send($url, $headers, drupal_json_encode($data), 'init_invoice');
     if ($response['http_code'] != HTTP_CODE_CREATED) {
-        drupal_set_message(t('An error occurred while creating invoice'), 'error');
+        drupal_set_message(t('Что-то пошло не так! Мы уже знаем и работаем над этим!'), 'error');
         drupal_goto('cart');
     }
 
-    return $response;
+    return json_decode($response['body'], true);
 }
 
 function _rbkmoney_checkout_ubercart_prepare_headers()
 {
-    $headers = [];
+    $headers = array();
     $headers[] = 'X-Request-ID: ' . uniqid();
     $headers[] = 'Authorization: Bearer ' . MERCHANT_PRIVATE_KEY;
     $headers[] = 'Content-type: application/json; charset=utf-8';
@@ -500,7 +484,7 @@ function _rbkmoney_checkout_ubercart_prepare_metadata($order)
 function _rbkmoney_checkout_ubercart_prepare_amount($amount)
 {
     if ($amount < 0) {
-        drupal_set_message(t('Requested amount less than allowed'), 'error');
+        drupal_set_message(t('Сумма заказа меньше допустимой'), 'error');
         drupal_goto('cart');
     }
     return $amount * 100;
@@ -536,7 +520,11 @@ function _rbkmoney_checkout_ubercart_send($url = '', $headers = [], $data = '', 
         'response' => $response,
     ];
 
-    _rbkmoney_checkout_ubercart_logger($type, "<pre>%logs</pre>", ['%logs' => var_export($logs, TRUE)]);
+    _rbkmoney_checkout_ubercart_logger($type, "<pre>%logs</pre>",
+      [
+        '%logs' => var_export($logs, TRUE)
+      ]
+    );
     curl_close($curl);
 
     return $response;
