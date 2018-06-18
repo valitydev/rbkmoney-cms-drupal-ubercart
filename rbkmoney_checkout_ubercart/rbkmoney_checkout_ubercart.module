@@ -85,7 +85,7 @@ function rbkmoney_checkout_ubercart_setup()
 
     $form['tab1']['uc_rbkmoney_merchant_callback_public_key'] = [
         '#type' => 'textarea',
-        '#title' => t('Приватный ключ из <a href=\'!dblog\'>https://dashboard.rbk.money</a>',
+        '#title' => t('Публичный ключ из <a href=\'!dblog\'>https://dashboard.rbk.money</a>',
             ['!dblog' => "https://dashboard.rbk.money"]),
         '#default_value' => MERCHANT_CALLBACK_PUBLIC_KEY,
         '#description' => t('Ключ для обработки уведомлений о смене статуса'),
@@ -98,7 +98,7 @@ function rbkmoney_checkout_ubercart_setup()
 
     $form['tab1']['uc_rbkmoney_merchant_private_key'] = [
         '#type' => 'textarea',
-        '#title' => t('Публичный ключ из <a href=\'!dblog\'>https://dashboard.rbk.money</a>',
+        '#title' => t('Приватный ключ из <a href=\'!dblog\'>https://dashboard.rbk.money</a>',
             ['!dblog' => "https://dashboard.rbk.money"]),
         '#default_value' => MERCHANT_PRIVATE_KEY,
         '#description' => t('Ключ для доступа к API. Скопируйте его в Личном кабинете RBKmoney в разделе API Ключ'),
