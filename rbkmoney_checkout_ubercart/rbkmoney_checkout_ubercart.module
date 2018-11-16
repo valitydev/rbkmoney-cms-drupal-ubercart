@@ -388,8 +388,6 @@ function rbkmoney_checkout_ubercart_payment_end($arg)
         case 'success':
             if (isset($_SESSION['cart_order'])) {
                 $_SESSION['uc_checkout'][$_SESSION['cart_order']]['do_complete'] = TRUE;
-                if (!empty($_SESSION[API_INVOICE_ID])) unset($_SESSION[API_INVOICE_ID]);
-                if (!empty($_SESSION[API_INVOICE_ACCESS_TOKEN])) unset($_SESSION[API_INVOICE_ACCESS_TOKEN]);
                 drupal_goto('cart/checkout/complete');
             }
             break;
@@ -397,8 +395,6 @@ function rbkmoney_checkout_ubercart_payment_end($arg)
         case 'fail':
             if (isset($_SESSION['cart_order'])) {
                 unset($_SESSION['cart_order']);
-                if (!empty($_SESSION[API_INVOICE_ID])) unset($_SESSION[API_INVOICE_ID]);
-                if (!empty($_SESSION[API_INVOICE_ACCESS_TOKEN])) unset($_SESSION[API_INVOICE_ACCESS_TOKEN]);
                 drupal_set_message(t('Ваш платеж отклонен.'), 'error');
                 drupal_goto('cart');
             }
