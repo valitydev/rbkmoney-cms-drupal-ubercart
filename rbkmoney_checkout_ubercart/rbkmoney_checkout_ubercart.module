@@ -250,18 +250,13 @@ function rbkmoney_checkout_ubercart_form_alter(&$form, &$form_state, $form_id)
         if ($order->payment_method == 'rbkmoney') {
             unset($form['actions']['submit']);
 
-            if (empty($_SESSION[API_INVOICE_ID]) || empty($_SESSION[API_INVOICE_ACCESS_TOKEN])) {
+            
                 $response = _rbkmoney_checkout_ubercart_create_invoice($order);
 
                 $invoice_id = $response["invoice"]["id"];
                 $access_token = $response["invoiceAccessToken"]["payload"];
 
-                $_SESSION[API_INVOICE_ID] = $invoice_id;
-                $_SESSION[API_INVOICE_ACCESS_TOKEN] = $access_token;
-            } else {
-                $invoice_id = $_SESSION[API_INVOICE_ID];
-                $access_token = $_SESSION[API_INVOICE_ACCESS_TOKEN];
-            }
+              
 
             $form_company_name = variable_get('uc_rbkmoney_payform_company_name');
             $company_name = !empty($form_company_name) ? 'data-name="' . $form_company_name . '"' : '';
